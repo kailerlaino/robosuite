@@ -53,12 +53,13 @@ for i in range(1000):
 
 
     # Initial settings to access collision data 
-    table_id = env.sim.model.body_name2id("table")
-    robot_id = env.sim.model.body_name2id("gripper0_right_gripper")
+    table_id = env.sim.model.geom_name2id("table_collision")
+    robot_id = env.sim.model.geom_name2id("gripper0_finger1_collision")
 
     for contact in env.sim.data.contact:
         if (contact.geom1 == table_id and contact.geom2 == robot_id) or (contact.geom2 == table_id and contact.geom1 == robot_id):
             print("Collision detected between robot and table")
+        print(contact)
 
     print(table_id)
 
