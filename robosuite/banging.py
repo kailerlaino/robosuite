@@ -25,8 +25,8 @@ env = suite.make(
 env.reset()
 
 # Initial position settings
-downward_step = -0.5  # Step size for downward motion
-upward_step = 0.5  # Step size for upward motion
+downward_step = -1.5  # Step size for downward motion
+upward_step = 1.5  # Step size for upward motion
 is_moving_down = True  # State variable
 action = np.zeros(num_actions)  # Initialize action array
 steps_moved = 0  # Counter for steps
@@ -50,6 +50,18 @@ for i in range(1000):
     elif not is_moving_down and steps_moved >= 35:  # Adjust 50 as needed
         is_moving_down = True
         steps_moved = 0  # Reset the counter
+
+
+    # Initial settings to access collision data 
+    table_id = env.sim.model.body_name2id("table")
+    robot_id = env.sim.model.body_name2id("gripper0_right_gripper")
+
+    for contact in env.sim.data.contact:
+        if (contact.geom1 == table_id and contact.geom2 == robot_id) or (contact.geom2 == table_id and contact.geom1 == robot_id):
+            print("Collision detected between robot and table")
+
+    print(table_id)
+
 
     # Reset action to avoid accumulation
     action.fill(0)  # Clear the action except for the z component
