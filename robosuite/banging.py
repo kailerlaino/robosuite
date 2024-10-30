@@ -2,54 +2,60 @@ import numpy as np
 import robosuite as suite
 from robosuite import load_controller_config
 
-controller_name='OSC_POSITION' # control hand
-# controller_name='IK' # control hand
-# controller_name='JOINT_POSITION' # control joints
-
-num_actions = 4 # (x,y,z, gripper open/close), maybe 7
-# num_actions = env.robots[0].dof # joints
+controller_name = 'OSC_POSITION'
+num_actions = 4
 
 config = load_controller_config(default_controller=controller_name)
 
-# create environment instance
+# Create environment instance
 env = suite.make(
-    env_name="Lift", # try with other tasks like "Stack" and "Door"
-    robots="Panda",  # try with other robots like "Sawyer" and "Jaco"
+    env_name="Lift", 
+    robots="Panda",  
     has_renderer=True,
     has_offscreen_renderer=False,
     use_camera_obs=False,
+    use_object_obs=True,  # Enable contact info
     controller_configs=config
 )
 
-# reset the environment
+# Reset environment
 env.reset()
 
 # Initial position settings
-downward_step = -1.5  # Step size for downward motion
-upward_step = 1.5  # Step size for upward motion
+downward_step = -0.5  # Step size for downward motion
+upward_step = 0.5  # Step size for upward motion
 is_moving_down = True  # State variable
 action = np.zeros(num_actions)  # Initialize action array
 steps_moved = 0  # Counter for steps
 
 for i in range(1000):
-    if is_moving_down:
-        action[2] = downward_step  # Move downwards
-    else:
-        action[2] = upward_step  # Move upwards
+    # Move downwards or upwards based on current state
+    action[2] = downward_step if is_moving_down else upward_step
+    
+    # Take action
+    obs, reward, done, info = env.step(action)
+    env.render()
+    
+    # Get the end effector position
+    eef_pos = obs['robot0_eef_pos']
+    print(obs['robot0_eef_pos'])
+    
+    # Check for contact with the table
+    if 'robot0_contact' in obs and np.any(obs['robot0_contact']):
+        is_moving_down = not is_moving_down
+        print('Collision detected: robot0_contact')
+    
+    # Check if the end effector is below the lower threshold
+    if eef_pos[2] < lower_threshold and is_moving_down:
+        is_moving_down = False  # Switch to moving up
+        print('Switching to upward movement due to position')
+        print(obs['robot0_eef_pos'])
 
-    # Take action in the environment
-    obs, reward, done, info = env.step(action)  
-    env.render()  # Render on display
-
-    steps_moved += 1  # Increment the step counter
-
-    # Switch states after a fixed number of steps
-    if is_moving_down and steps_moved >= 35:  # Adjust 50 as needed
-        is_moving_down = False
-        steps_moved = 0  # Reset the counter
-    elif not is_moving_down and steps_moved >= 35:  # Adjust 50 as needed
-        is_moving_down = True
-        steps_moved = 0  # Reset the counter
+    # Check if the end effector is above the upper threshold
+    if eef_pos[2] > upper_threshold and not is_moving_down:
+        is_moving_down = True  # Switch to moving down
+        print('Switching to downward movement due to position')
+        print(obs['robot0_eef_pos'])
 
 
     # Initial settings to access collision data 
@@ -65,4 +71,7 @@ for i in range(1000):
 
 
     # Reset action to avoid accumulation
-    action.fill(0)  # Clear the action except for the z component
+    action.fill(0)
+
+# Close the environment when done
+env.close()
