@@ -21,12 +21,15 @@ env = suite.make(
 # Reset environment
 env.reset()
 
-# Initial position settings
-downward_step = -0.5  # Step size for downward motion
-upward_step = 0.5  # Step size for upward motion
-is_moving_down = True  # State variable
-action = np.zeros(num_actions)  # Initialize action array
-steps_moved = 0  # Counter for steps
+# Position settings
+downward_step = -0.5
+upward_step = 0.5
+is_moving_down = True
+action = np.zeros(num_actions)
+
+# Thresholds for direction switching
+lower_threshold = 0.82  # Adjust based on your environment
+upper_threshold = 1.0   # Adjust based on your environment
 
 for i in range(1000):
     # Move downwards or upwards based on current state
@@ -56,19 +59,6 @@ for i in range(1000):
         is_moving_down = True  # Switch to moving down
         print('Switching to downward movement due to position')
         print(obs['robot0_eef_pos'])
-
-
-    # Initial settings to access collision data 
-    table_id = env.sim.model.geom_name2id("table_collision")
-    robot_id = env.sim.model.geom_name2id("gripper0_finger1_collision")
-
-    for contact in env.sim.data.contact:
-        if (contact.geom1 == table_id and contact.geom2 == robot_id) or (contact.geom2 == table_id and contact.geom1 == robot_id):
-            print("Collision detected between robot and table")
-        print(contact)
-
-    print(table_id)
-
 
     # Reset action to avoid accumulation
     action.fill(0)
