@@ -35,21 +35,19 @@ counter = 0
 
 def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps=200, noise_scale=0.05, back_to_start=False): 
     action = np.zeros(num_actions)
-    joint_positions = []  # List to store joint positions
+    eef_positions = []  # List to store joint positions
 
     for i in range(max_steps):
         # Get current observation and apply action
         obs, reward, done, info = env.step(action)
 
-        joint_positions.append(env.sim.data.qpos.copy())
+        eef_pos = obs['robot0_eef_pos']  # Get the current end effector position
+        eef_positions.append(eef_pos.copy())  # Store the end effector position
 
         if done:
             print("Episode terminated. Resetting the environment.")
             env.reset()
             return  # Exit the function or re-handle the call
-        
-        # Get the current end effector position
-        eef_pos = obs['robot0_eef_pos']
 
         # Apply random noise to the x and y target positions only
         noisy_target_x = target_x + np.random.uniform(-noise_scale, noise_scale)
@@ -90,13 +88,14 @@ def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps
                 
         # Reset action to avoid accumulation
         action.fill(0)
-    joint_positions = np.array(joint_positions)
-    filename = "my_joint_data.csv"
+    eef_positions = np.array(eef_positions)
+    filename = "eef_positions.csv"
     try:
-        np.savetxt(filename, joint_positions, delimiter=",")  # Use the filename variable
-        print(f"Joint positions saved successfully to {filename}")
+        np.savetxt(filename, eef_positions, delimiter=",")  # Save end effector positions to a file
+        print(f"End effector positions saved successfully to {filename}")
     except Exception as e:
-        print(f"Error saving joint positions: {e}")
+        print(f"Error saving end effector positions: {e}")
+
 
 
 

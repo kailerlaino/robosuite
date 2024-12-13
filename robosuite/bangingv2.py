@@ -34,8 +34,10 @@ lower_threshold = 0.82  # Adjust based on your environment
 upper_threshold = 1.0   # Adjust based on your environment
 
 
-def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps=500, back_to_start=False):
+def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps=200, back_to_start=False):
     action = np.zeros(num_actions)
+    eef_positions = []  # List to store joint positions
+
 
     for i in range(max_steps):
         # Get current observation and apply action
@@ -43,7 +45,8 @@ def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps
         
         # Get the current end effector position
         eef_pos = obs['robot0_eef_pos']
-        
+        eef_positions.append(eef_pos.copy())  # Store the end effector position
+
         # Calculate the movement needed to reach the target x and y with larger steps
         action[0] = (target_x - eef_pos[0]) * 2  # Larger step for x direction
         action[1] = (target_y - eef_pos[1]) * 2  # Larger step for y direction
@@ -74,13 +77,19 @@ def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps
 
         # Reset action to avoid accumulation
         action.fill(0)
-
+    eef_positions = np.array(eef_positions)
+    filename = "eef_positions2-1.csv"
+    try:
+        np.savetxt(filename, eef_positions, delimiter=",")  # Save end effector positions to a file
+        print(f"End effector positions saved successfully to {filename}")
+    except Exception as e:
+        print(f"Error saving end effector positions: {e}")
 
 # Example usage of the function
 initial_position = None
 
 # Define target position for movement
-target_position_1 = (0.2, 0.2, 0.82)  # Example coordinates
+target_position_1 = (0.1, 0.1, 0.82)  # Example coordinates
 move_to_position(env, *target_position_1)
 
 # After moving to the target, store the current position as the initial position

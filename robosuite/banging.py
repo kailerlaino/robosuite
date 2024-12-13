@@ -31,9 +31,12 @@ action = np.zeros(num_actions)
 lower_threshold = 0.82  # Adjust based on your environment
 upper_threshold = 1.0   # Adjust based on your environment
 
-for i in range(1000):
+eef_positions = []
+
+for i in range(200):
     # Move downwards or upwards based on current state
     action[2] = downward_step if is_moving_down else upward_step
+    
     
     # Take action
     obs, reward, done, info = env.step(action)
@@ -41,6 +44,7 @@ for i in range(1000):
     
     # Get the end effector position
     eef_pos = obs['robot0_eef_pos']
+    eef_positions.append(eef_pos)  # Record the position
     print(obs['robot0_eef_pos'])
     
     # Check for contact with the table
@@ -62,6 +66,13 @@ for i in range(1000):
 
     # Reset action to avoid accumulation
     action.fill(0)
+eef_positions = np.array(eef_positions)
+filename = "eef_positions1.1.csv"
+try:
+    np.savetxt(filename, eef_positions, delimiter=",", header="x,y,z", comments="")
+    print(f"End effector positions saved successfully to {filename}")
+except Exception as e:
+    print(f"Error saving end effector positions: {e}")
 
 # Close the environment when done
 env.close()
