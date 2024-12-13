@@ -1,12 +1,11 @@
 import numpy as np
 import robosuite as suite
 from robosuite import load_controller_config
-
+from record_joint_positions import record_joint_positions  # Import your custom function
 
 
 controller_name = 'OSC_POSITION'
 num_actions = 4
-
 config = load_controller_config(default_controller=controller_name)
 
 # Create environment instance
@@ -34,12 +33,20 @@ lower_threshold = 0.82  # Adjust based on your environment
 upper_threshold = 1.0   # Adjust based on your environment
 counter = 0
 
-def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps=500, noise_scale=0.05, back_to_start=False): 
+def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps=200, noise_scale=0.05, back_to_start=False): 
     action = np.zeros(num_actions)
+    joint_positions = []  # List to store joint positions
 
     for i in range(max_steps):
         # Get current observation and apply action
         obs, reward, done, info = env.step(action)
+
+        joint_positions.append(env.sim.data.qpos.copy())
+
+        if done:
+            print("Episode terminated. Resetting the environment.")
+            env.reset()
+            return  # Exit the function or re-handle the call
         
         # Get the current end effector position
         eef_pos = obs['robot0_eef_pos']
@@ -83,6 +90,14 @@ def move_to_position(env, target_x, target_y, target_z, tolerance=0.1, max_steps
                 
         # Reset action to avoid accumulation
         action.fill(0)
+    joint_positions = np.array(joint_positions)
+    filename = "my_joint_data.csv"
+    try:
+        np.savetxt(filename, joint_positions, delimiter=",")  # Use the filename variable
+        print(f"Joint positions saved successfully to {filename}")
+    except Exception as e:
+        print(f"Error saving joint positions: {e}")
+
 
 
 # Example usage of the function
@@ -91,6 +106,8 @@ initial_position = None
 # Define target position for movement
 target_position_1 = (0.15, 0.15, 0.82)  # Example coordinates
 move_to_position(env, *target_position_1)
+
+# record_joint_positions(env, steps=200, filename="my_joint_data.csv")
 
 # After moving to the target, store the current position as the initial position
 initial_position = env.sim.data.get_site_xpos("gripper0_grip_site")
